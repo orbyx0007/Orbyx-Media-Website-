@@ -1156,26 +1156,40 @@ function initNavbar() {
     window.scrollTo({ top: Math.max(0, targetY), behavior: smooth ? 'smooth' : 'instant' });
   };
 
+  // Helper to get true absolute document Y position
+  const getAbsoluteTop = (el) => {
+    if (!el) return Infinity;
+    return el.getBoundingClientRect().top + window.pageYOffset;
+  };
+
   // Scroll spy to update active link
   const updateActiveNav = () => {
     if (!isHomePage) return;
     const currentY = window.scrollY;
+    const navHeight = navbar.offsetHeight || 80;
+    const offsetThreshold = navHeight + 120;
+
     const container = document.getElementById('scroll-container');
     const servicesEl = document.getElementById('services');
     const faqEl = document.getElementById('faq');
     const contactEl = document.getElementById('contact');
 
+    const contactTop = getAbsoluteTop(contactEl);
+    const faqTop = getAbsoluteTop(faqEl);
+    const servicesTop = getAbsoluteTop(servicesEl);
+
     let currentSection = 'home';
 
-    if (contactEl && currentY >= contactEl.offsetTop - 280) {
+    if (currentY >= contactTop - offsetThreshold) {
       currentSection = 'contact';
-    } else if (faqEl && currentY >= faqEl.offsetTop - 280) {
+    } else if (currentY >= faqTop - offsetThreshold) {
       currentSection = 'faq';
-    } else if (servicesEl && currentY >= servicesEl.offsetTop - 280) {
+    } else if (currentY >= servicesTop - offsetThreshold) {
       currentSection = 'services';
     } else if (container) {
+      const containerTop = getAbsoluteTop(container);
       const totalScrollable = container.offsetHeight - window.innerHeight;
-      const progress = totalScrollable > 0 ? (currentY - container.offsetTop) / totalScrollable : 0;
+      const progress = totalScrollable > 0 ? (currentY - containerTop) / totalScrollable : 0;
       if (progress >= 0.12 && progress < 0.28) {
         currentSection = 'about';
       } else {
