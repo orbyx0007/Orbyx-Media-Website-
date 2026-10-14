@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * ORBYX MEDIA - TUNNEL WARP PRELOADER (preloader.js)
- * High-performance canvas starfield warp jump synchronized with frame loading.
+ * Ultra-smooth, GPU-optimized canvas starfield warp jump.
  * ============================================================================
  */
 
@@ -11,14 +11,12 @@
   // 1. CONFIGURATION & CONSTANTS
   const STORAGE_KEY = 'orbyx_warp_preloader_seen';
   const COLORS = ['#8B5CF6', '#D946EF', '#F0ABFC'];
-  const SLOW_TIMEOUT_MS = 8000;
-  const SAFETY_TIMEOUT_MS = 10000;
-  const FALLBACK_DURATION_MS = 2500;
+  const MAX_PRELOADER_DURATION_MS = 1800; // Snappy 1.8s maximum duration
 
   // Reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // DOM elements (created if not present in HTML)
+  // DOM elements
   let preloaderEl = null;
   let canvas = null;
   let ctx = null;
@@ -29,7 +27,7 @@
 
   // Animation state
   let isMobile = window.innerWidth < 768;
-  let particleCount = isMobile ? 120 : 200;
+  let particleCount = isMobile ? 60 : 100;
   let particles = [];
   let dpr = 1;
   let width = 0;
@@ -42,19 +40,14 @@
   let isExiting = false;
   let isFinished = false;
 
-  // Progress smoothing state
+  // Progress state
   let targetProgress = 0;
   let smoothProgress = 0;
   let currentShownPercent = 0;
-  let isDrivenByFrames = false;
-  let fallbackStartTime = null;
+  let startTime = null;
 
   // Warp speed boost on exit
   let exitSpeedMultiplier = 1;
-
-  // Timers
-  let slowTimer = null;
-  let safetyTimer = null;
 
   /**
    * Helper: Initialize / Mount Preloader DOM
@@ -62,7 +55,6 @@
   function setupDOM() {
     preloaderEl = document.getElementById('warp-preloader');
 
-    // If preloader markup isn't already present, inject it dynamically
     if (!preloaderEl) {
       preloaderEl = document.createElement('div');
       preloaderEl.id = 'warp-preloader';
@@ -86,7 +78,6 @@
         </div>
       `;
 
-      // Insert at the very top of body
       if (document.body) {
         document.body.insertBefore(preloaderEl, document.body.firstChild);
       } else {
@@ -108,19 +99,26 @@
   }
 
   /**
-   * Helper: Check Session & URL Override
+   * Helper: Check Session, Direct Hash Anchor & URL Override
    */
   function shouldSkip() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('hidePreloader') || urlParams.has('skipPreloader')) {
       return true;
     }
+
+    // Direct deep-link with hash (e.g. #faq, #services, #creators, #contact)
+    // Instantly skip preloader so visitor immediately lands on target section without lag
+    if (window.location.hash && window.location.hash.length > 1) {
+      return true;
+    }
+
     try {
       if (sessionStorage.getItem(STORAGE_KEY) === 'true') {
         return true;
       }
     } catch (e) {
-      // sessionStorage restricted (e.g. private mode)
+      // sessionStorage restricted
     }
     return false;
   }
@@ -131,15 +129,15 @@
   function initParticles() {
     particles = [];
     isMobile = window.innerWidth < 768;
-    particleCount = isMobile ? 120 : 200;
+    particleCount = isMobile ? 60 : 100;
 
     for (let i = 0; i < particleCount; i++) {
       particles.push({
         angle: Math.random() * Math.PI * 2,
         dist: Math.random() * maxRadius,
-        speedFactor: 0.6 + Math.random() * 1.4,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        widthFactor: 0.8 + Math.random() * 0.8
+        speedFactor: 0.7 + Math.random() * 1.3,
+        color: COLORS[i % COLORS.length],
+        widthFactor: 1.0 + Math.random() * 0.8
       });
     }
   }
@@ -149,7 +147,7 @@
    */
   function resizeCanvas() {
     if (!canvas || !ctx) return;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5); // Cap DPR at 1.5 for ultra-smooth rendering
     width = window.innerWidth;
     height = window.innerHeight;
 
@@ -162,19 +160,18 @@
   }
 
   /**
-   * Draw Radial Purple Glow at Center
+   * Draw Center Glow (Optimized)
    */
   function drawCenterGlow(progress) {
     if (!ctx) return;
-    const baseRadius = Math.min(width, height) * 0.18 * dpr;
-    const glowRadius = baseRadius + (Math.min(width, height) * 0.32 * dpr * progress);
+    const baseRadius = Math.min(width, height) * 0.16 * dpr;
+    const glowRadius = baseRadius + (Math.min(width, height) * 0.28 * dpr * progress);
 
     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
-    const alphaMagenta = 0.18 + (progress * 0.42);
-    const alphaViolet = 0.08 + (progress * 0.28);
+    const alphaMagenta = 0.15 + (progress * 0.35);
 
     grad.addColorStop(0, `rgba(217, 70, 239, ${alphaMagenta})`);
-    grad.addColorStop(0.45, `rgba(139, 92, 246, ${alphaViolet})`);
+    grad.addColorStop(0.5, `rgba(139, 92, 246, ${alphaMagenta * 0.5})`);
     grad.addColorStop(1, 'rgba(10, 6, 18, 0)');
 
     ctx.fillStyle = grad;
@@ -184,26 +181,25 @@
   }
 
   /**
-   * Starfield Warp Canvas Render Loop
+   * Starfield Warp Canvas Render Loop (Batched for 60fps)
    */
   function renderWarpLoop(timestamp) {
     if (isPaused) return;
 
-    // Fallback progress simulation if real frame loader has not reported
-    if (!isDrivenByFrames && !isFinished) {
-      if (!fallbackStartTime) fallbackStartTime = timestamp;
-      const elapsed = timestamp - fallbackStartTime;
-      const simulated = Math.min(0.98, elapsed / FALLBACK_DURATION_MS);
-      if (simulated > targetProgress) {
-        targetProgress = simulated;
-      }
+    if (!startTime) startTime = timestamp;
+    const elapsed = timestamp - startTime;
+
+    // Smooth baseline progress progression (reaches ~95% within MAX_PRELOADER_DURATION_MS)
+    const timeProgress = Math.min(0.96, Math.pow(elapsed / MAX_PRELOADER_DURATION_MS, 0.85));
+    if (timeProgress > targetProgress && targetProgress < 0.98) {
+      targetProgress = Math.max(targetProgress, timeProgress);
     }
 
     // Smooth progress interpolation
-    if (targetProgress >= 1.0 && (1.0 - smoothProgress) < 0.02) {
+    if (targetProgress >= 1.0 && (1.0 - smoothProgress) < 0.03) {
       smoothProgress = 1.0;
     } else {
-      smoothProgress += (targetProgress - smoothProgress) * 0.14;
+      smoothProgress += (targetProgress - smoothProgress) * 0.15;
     }
 
     // Strict non-decreasing percentage display
@@ -226,35 +222,33 @@
       ctx.fillStyle = '#0A0612';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Growing center glow
+      // Center ambient glow
       drawCenterGlow(smoothProgress);
 
-      // Eased speed and streak multiplier
-      // At progress 0: stars drift gently (speed ~ 1.2 * dpr)
-      // At progress 1: hyper-drive streaks (speed ~ 30 * dpr)
       const easeFactor = Math.pow(smoothProgress, 2.2);
-      const baseSpeed = ((1.2 + (easeFactor * 28)) * dpr) * exitSpeedMultiplier;
-      const streakMultiplier = (1.2 + (easeFactor * 4.8)) * exitSpeedMultiplier;
+      const baseSpeed = ((1.4 + (easeFactor * 26)) * dpr) * exitSpeedMultiplier;
+      const streakMultiplier = (1.2 + (easeFactor * 4.2)) * exitSpeedMultiplier;
 
-      // Draw all starfield particles
+      // Group particle strokes into 3 color buckets to minimize draw calls
+      const linesByColor = {
+        '#8B5CF6': [],
+        '#D946EF': [],
+        '#F0ABFC': []
+      };
+
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
-
-        // Step distance outward
         const speed = baseSpeed * p.speedFactor;
         const prevDist = Math.max(0, p.dist - (speed * streakMultiplier));
         p.dist += speed;
 
-        // Reset if particle escaped screen boundary
         if (p.dist > maxRadius) {
-          p.dist = Math.random() * 25 + 2;
+          p.dist = Math.random() * 20 + 2;
           p.angle = Math.random() * Math.PI * 2;
-          p.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-          p.speedFactor = 0.6 + Math.random() * 1.4;
+          p.speedFactor = 0.7 + Math.random() * 1.3;
           continue;
         }
 
-        // Coordinates
         const cosA = Math.cos(p.angle);
         const sinA = Math.sin(p.angle);
         const currX = cx + cosA * p.dist;
@@ -262,21 +256,26 @@
         const prevX = cx + cosA * prevDist;
         const prevY = cy + sinA * prevDist;
 
-        // Opacity increases as particle moves further from center
-        const distanceRatio = Math.min(1, p.dist / (maxRadius * 0.85));
-        const alpha = Math.min(1, Math.max(0.12, distanceRatio * 0.95));
-
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = Math.max(1, p.widthFactor * dpr);
-        ctx.globalAlpha = alpha;
-
-        ctx.beginPath();
-        ctx.moveTo(prevX, prevY);
-        ctx.lineTo(currX, currY);
-        ctx.stroke();
+        if (linesByColor[p.color]) {
+          linesByColor[p.color].push(prevX, prevY, currX, currY);
+        }
       }
 
-      ctx.globalAlpha = 1;
+      // Batch draw per color
+      ctx.lineWidth = Math.max(1, 1.2 * dpr);
+      for (let c = 0; c < COLORS.length; c++) {
+        const col = COLORS[c];
+        const coords = linesByColor[col];
+        if (!coords || coords.length === 0) continue;
+
+        ctx.strokeStyle = col;
+        ctx.beginPath();
+        for (let j = 0; j < coords.length; j += 4) {
+          ctx.moveTo(coords[j], coords[j + 1]);
+          ctx.lineTo(coords[j + 2], coords[j + 3]);
+        }
+        ctx.stroke();
+      }
     }
 
     if (!isFinished) {
@@ -285,38 +284,26 @@
   }
 
   /**
-   * Exit Sequence: Hold 150ms -> Hyper Stretch -> Flash 300ms -> Fade 500ms
+   * Exit Sequence: Snappy 120ms Hold -> Flash 250ms -> Fade 400ms
    */
   function executeExitSequence() {
     isFinished = true;
 
-    // Clear timeout guards
-    if (slowTimer) clearTimeout(slowTimer);
-    if (safetyTimer) clearTimeout(safetyTimer);
-
-    // 1. Hold for 150ms at 100%
     setTimeout(() => {
-      // 2. Streaks stretch to maximum warp jump
       exitSpeedMultiplier = 3.5;
 
-      // 3. Flash radial white-purple gradient across screen for 300ms
       if (flashEl && !prefersReducedMotion) {
         flashEl.classList.add('active');
       }
 
       setTimeout(() => {
-        // 4. Fade out overlay over 500ms
         if (preloaderEl) {
           preloaderEl.classList.add('fade-out');
         }
 
-        // 5. Trigger Hero entrance animation simultaneously with fade out
         triggerHeroEntrance();
-
-        // 6. Re-enable page scrolling
         document.body.style.overflow = '';
 
-        // 7. Remove from DOM and cancel RAF
         setTimeout(() => {
           if (preloaderEl && preloaderEl.parentNode) {
             preloaderEl.parentNode.removeChild(preloaderEl);
@@ -326,9 +313,9 @@
             rafId = null;
           }
           window.dispatchEvent(new CustomEvent('orbyx:preloader-complete'));
-        }, 550);
-      }, 300);
-    }, 150);
+        }, 450);
+      }, 250);
+    }, 120);
   }
 
   /**
@@ -343,27 +330,42 @@
   }
 
   /**
-   * Fast Exit for Return Visits / Skip
+   * Fast Exit for Return Visits & Hash Deep-Links
    */
   function fastSkip() {
     if (preloaderEl) {
       preloaderEl.classList.add('fade-out');
-      setTimeout(() => {
-        if (preloaderEl && preloaderEl.parentNode) {
-          preloaderEl.parentNode.removeChild(preloaderEl);
-        }
-      }, 300);
+      preloaderEl.style.display = 'none';
+      if (preloaderEl.parentNode) {
+        preloaderEl.parentNode.removeChild(preloaderEl);
+      }
     }
     document.body.style.overflow = '';
     triggerHeroEntrance();
+
+    // If loaded with a hash (e.g. #faq), smoothly navigate to the target element
+    if (window.location.hash) {
+      const hash = window.location.hash;
+      const smoothScrollToTarget = () => {
+        try {
+          const target = document.querySelector(hash);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } catch (e) {}
+      };
+      if (document.readyState === 'complete') {
+        setTimeout(smoothScrollToTarget, 50);
+      } else {
+        window.addEventListener('load', () => setTimeout(smoothScrollToTarget, 50), { once: true });
+      }
+    }
   }
 
   /**
    * Public API: setPreloaderProgress(value)
-   * Called by frame sequence loader with ratio (0 to 1) or percentage (0 to 100).
    */
   window.setPreloaderProgress = function (value) {
-    isDrivenByFrames = true;
     let norm = typeof value === 'number' ? value : parseFloat(value);
     if (isNaN(norm)) return;
 
@@ -402,50 +404,35 @@
   function init() {
     setupDOM();
 
-    // Check if user already saw the preloader in this session
     if (shouldSkip()) {
       fastSkip();
       return;
     }
 
-    // Mark session as seen
     try {
       sessionStorage.setItem(STORAGE_KEY, 'true');
     } catch (e) {}
 
-    // Lock page scrolling while preloader is active
     document.body.style.overflow = 'hidden';
 
-    // Canvas geometry
     resizeCanvas();
     window.addEventListener('resize', () => {
       resizeCanvas();
       initParticles();
     });
 
-    // Populate particles
     initParticles();
 
-    // 8-Second Slow Loading Notice
-    slowTimer = setTimeout(() => {
-      if (!isFinished && statusEl) {
-        statusEl.textContent = 'Still loading...';
-        statusEl.classList.add('visible');
-      }
-    }, SLOW_TIMEOUT_MS);
-
-    // 10-Second Safety Timeout (Guaranteed unblock)
-    safetyTimer = setTimeout(() => {
+    // Absolute fallback: unblock in 2.2 seconds maximum
+    setTimeout(() => {
       if (!isFinished) {
         window.setPreloaderProgress(1.0);
       }
-    }, SAFETY_TIMEOUT_MS);
+    }, 2200);
 
-    // Start Animation Loop
     rafId = requestAnimationFrame(renderWarpLoop);
   }
 
-  // Execute on DOM ready or immediate if already loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

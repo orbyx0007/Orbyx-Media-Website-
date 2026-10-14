@@ -566,7 +566,7 @@ class ScrollCanvasEngine {
   }
 
   preloadImages() {
-    // 1. Immediately load Frame 1 to paint canvas instantly
+    // 1. Immediately load Frame 0 to paint canvas instantly
     this.loadSingleImage(0, (success) => {
       if (success) {
         this.lastRenderedFrame = -1;
@@ -574,56 +574,26 @@ class ScrollCanvasEngine {
       }
     });
 
-    // 2. Progressive loading with preloader feedback
-    let loadedCount = 0;
-    const step = this.isMobile ? ORBYX_CONFIG.MOBILE_FRAME_STEP : 1;
-    const initialKeyframes = [];
+    // 2. Load initial buffer frames (0, 1, 2) to unblock the preloader smoothly in ~300ms
+    const criticalBuffer = [0, 1, 2];
+    let criticalLoaded = 0;
 
-    // Load initial 60 frames (every 4th) first to unblock preloader
-    for (let i = 0; i < this.totalFrames; i += 4) {
-      initialKeyframes.push(i);
-    }
-
-    const totalInitial = initialKeyframes.length;
-    let initialLoaded = 0;
-    const CONCURRENT_INITIAL = 4;
-    let nextIdxToLoad = 0;
-    let activeInitial = 0;
-
-    const pumpInitial = () => {
-      if (initialLoaded >= totalInitial) {
-        // Preloader complete: unblock entrance
+    criticalBuffer.forEach((frameIdx) => {
+      this.loadSingleImage(frameIdx, (success) => {
+        criticalLoaded++;
         if (typeof window.setPreloaderProgress === 'function') {
-          window.setPreloaderProgress(1.0);
+          window.setPreloaderProgress(criticalLoaded / criticalBuffer.length);
         }
-        // Load remaining frames in background
-        this.loadRemainingBackground();
-        return;
-      }
-
-      while (activeInitial < CONCURRENT_INITIAL && nextIdxToLoad < totalInitial) {
-        const kIdx = nextIdxToLoad++;
-        activeInitial++;
-
-        this.loadSingleImage(initialKeyframes[kIdx], (success) => {
-          activeInitial--;
-          initialLoaded++;
-
-          const progressRatio = initialLoaded / totalInitial;
+        if (criticalLoaded >= criticalBuffer.length) {
+          // Critical frames ready: unblock preloader immediately
           if (typeof window.setPreloaderProgress === 'function') {
-            window.setPreloaderProgress(progressRatio);
+            window.setPreloaderProgress(1.0);
           }
-
-          if (this.currentFrame === 0 && kIdx === 0) {
-            this.renderFrame(0);
-          }
-
-          pumpInitial();
-        });
-      }
-    };
-
-    pumpInitial();
+          // Start prioritized background streaming
+          this.loadRemainingBackground();
+        }
+      });
+    });
   }
 
   dismissPreloader() {
@@ -633,28 +603,41 @@ class ScrollCanvasEngine {
   }
 
   loadRemainingBackground() {
-    const MAX_CONCURRENT = 8;
-    let nextQueueIndex = 1;
+    // Stream remaining frames quietly with controlled concurrency to avoid network/CPU spikes
+    const MAX_CONCURRENT = 3;
     let activeDownloads = 0;
 
-    const loadNext = () => {
-      while (activeDownloads < MAX_CONCURRENT && nextQueueIndex < this.totalFrames) {
-        const idx = nextQueueIndex++;
-        if (this.loadedMap[idx]) continue; // already loaded in keyframe phase
+    // Stage 1: Keyframe wave (every 6th frame) for rapid full-scroll coverage
+    // Stage 2: Dense in-between frames
+    const queue = [];
+    for (let i = 0; i < this.totalFrames; i += 6) {
+      if (!this.loadedMap[i]) queue.push(i);
+    }
+    for (let i = 0; i < this.totalFrames; i++) {
+      if (!this.loadedMap[i] && !queue.includes(i)) queue.push(i);
+    }
+
+    let queueIdx = 0;
+
+    const pumpQueue = () => {
+      while (activeDownloads < MAX_CONCURRENT && queueIdx < queue.length) {
+        const frameIdx = queue[queueIdx++];
+        if (this.loadedMap[frameIdx]) continue;
 
         activeDownloads++;
-
-        this.loadSingleImage(idx, (success) => {
+        this.loadSingleImage(frameIdx, (success) => {
           activeDownloads--;
-          if (success && Math.abs(this.currentFrame - idx) < 2) {
+          if (success && Math.abs(this.currentFrame - frameIdx) < 2) {
             this.lastRenderedFrame = -1;
           }
-          loadNext();
+          // Yield to UI thread before pumping next frame
+          setTimeout(pumpQueue, 16);
         });
       }
     };
 
-    loadNext();
+    // Stagger start slightly to let entrance animations finish at 60fps
+    setTimeout(pumpQueue, 350);
   }
 
   onScroll() {
