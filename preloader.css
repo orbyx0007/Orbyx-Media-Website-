@@ -49,11 +49,11 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: radial-gradient(circle at center, #FFFFFF 0%, #F0ABFC 35%, #8B5CF6 70%, transparent 100%);
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.96) 0%, rgba(240, 171, 252, 0.8) 35%, rgba(139, 92, 246, 0.45) 70%, transparent 100%);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  mix-blend-mode: screen;
+  transition: opacity 0.25s ease-out;
+  will-change: opacity;
 }
 
 .warp-flash-overlay.active {

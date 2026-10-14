@@ -433,12 +433,14 @@ class ScrollCanvasEngine {
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
 
-    // Preload images starting with instant Frame 1 render
-    this.preloadImages();
-
-    // Start 60fps/120fps Animation Loop with smooth LERP inertia
+    this.isEngineStarted = false;
     this.animationLoop = this.animationLoop.bind(this);
-    requestAnimationFrame(this.animationLoop);
+    this.lastSyncedProgress = -1;
+    this.hasInitialSyncDone = false;
+    this.isBackgroundLoadingStarted = false;
+
+    // Preload images starting with instant Frame 0 render & buffer frames
+    this.preloadImages();
 
     // Scroll progress listener
     window.addEventListener('scroll', () => this.onScroll(), { passive: true });
@@ -455,7 +457,41 @@ class ScrollCanvasEngine {
       }
     } catch (e) {}
 
+    // Coordinate with preloader to eliminate 1st-load lag
+    const preloaderEl = document.getElementById('warp-preloader');
+    const isPreloaderActive = preloaderEl &&
+      !preloaderEl.classList.contains('fade-out') &&
+      window.getComputedStyle(preloaderEl).display !== 'none';
 
+    if (isPreloaderActive) {
+      // Delay engine RAF loop and background streaming until preloader completes
+      window.addEventListener('orbyx:preloader-complete', () => {
+        this.startEngine();
+      }, { once: true });
+
+      // Fallback safety timeout if event is missed
+      setTimeout(() => {
+        if (!this.isEngineStarted) {
+          this.startEngine();
+        }
+      }, 2500);
+    } else {
+      // Return visits or preloader skipped: start engine immediately
+      this.startEngine();
+    }
+  }
+
+  startEngine() {
+    if (this.isEngineStarted) return;
+    this.isEngineStarted = true;
+
+    // Start 60fps Animation Loop with smooth LERP inertia
+    requestAnimationFrame(this.animationLoop);
+
+    // Stagger heavy background frame streaming by 900ms so hero entrance animation glides in at 60fps
+    setTimeout(() => {
+      this.loadRemainingBackground();
+    }, 900);
   }
 
   getFramePath(index, candidateIdx = this.workingCandidateIdx) {
@@ -574,7 +610,7 @@ class ScrollCanvasEngine {
       }
     });
 
-    // 2. Load initial buffer frames (0, 1, 2) to unblock the preloader smoothly in ~300ms
+    // 2. Load initial buffer frames (0, 1, 2) to unblock the preloader smoothly in ~250ms
     const criticalBuffer = [0, 1, 2];
     let criticalLoaded = 0;
 
@@ -589,8 +625,8 @@ class ScrollCanvasEngine {
           if (typeof window.setPreloaderProgress === 'function') {
             window.setPreloaderProgress(1.0);
           }
-          // Start prioritized background streaming
-          this.loadRemainingBackground();
+          // Note: Full background streaming will start in startEngine()
+          // after preloader completion & hero entrance to keep 60fps silky smooth
         }
       });
     });
@@ -603,8 +639,11 @@ class ScrollCanvasEngine {
   }
 
   loadRemainingBackground() {
+    if (this.isBackgroundLoadingStarted) return;
+    this.isBackgroundLoadingStarted = true;
+
     // Stream remaining frames quietly with controlled concurrency to avoid network/CPU spikes
-    const MAX_CONCURRENT = 3;
+    const MAX_CONCURRENT = this.isMobile ? 2 : 3;
     let activeDownloads = 0;
 
     // Stage 1: Keyframe wave (every 6th frame) for rapid full-scroll coverage
@@ -630,14 +669,17 @@ class ScrollCanvasEngine {
           if (success && Math.abs(this.currentFrame - frameIdx) < 2) {
             this.lastRenderedFrame = -1;
           }
-          // Yield to UI thread before pumping next frame
-          setTimeout(pumpQueue, 16);
+          // Yield to UI thread with idle callback or gentle gap
+          if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(pumpQueue, { timeout: 100 });
+          } else {
+            setTimeout(pumpQueue, 30);
+          }
         });
       }
     };
 
-    // Stagger start slightly to let entrance animations finish at 60fps
-    setTimeout(pumpQueue, 350);
+    pumpQueue();
   }
 
   onScroll() {
@@ -656,21 +698,29 @@ class ScrollCanvasEngine {
     // Smooth inertia LERP damping (~0.12)
     const factor = ORBYX_CONFIG.LERP_SMOOTHING || 0.12;
     const diff = this.targetFrame - this.currentFrame;
+    const isMoving = Math.abs(diff) > 0.001;
 
-    if (Math.abs(diff) > 0.001) {
+    if (isMoving) {
       this.currentFrame += diff * factor;
-    } else {
+    } else if (this.currentFrame !== this.targetFrame) {
       this.currentFrame = this.targetFrame;
     }
 
     const roundedIndex = Math.round(this.currentFrame);
-    this.renderFrame(roundedIndex);
+    if (roundedIndex !== this.lastRenderedFrame || !this.isFirstDrawDone) {
+      this.renderFrame(roundedIndex);
+    }
 
-    // Sync HTML Text Beats across smoothed scroll progress
+    // Sync HTML Text Beats across smoothed scroll progress only when moving or on initial draw
     const smoothedProgress = this.totalFrames > 1
       ? clamp(this.currentFrame / (this.totalFrames - 1), 0, 1)
       : this.currentScrollProgress;
-    syncScrollBeats(smoothedProgress);
+
+    if (isMoving || !this.hasInitialSyncDone || Math.abs(smoothedProgress - this.lastSyncedProgress) > 0.0005) {
+      syncScrollBeats(smoothedProgress);
+      this.lastSyncedProgress = smoothedProgress;
+      this.hasInitialSyncDone = true;
+    }
 
     requestAnimationFrame(this.animationLoop);
   }
@@ -771,18 +821,35 @@ function applyPillarsCombinedAnimation(rowCombined, progress, start, end) {
   }
 }
 
-function syncScrollBeats(progress) {
-  // Elements
-  const beatHero = document.getElementById('beat-hero');
-  const beatAbout = document.getElementById('beat-about');
-  const beatPillars = document.getElementById('beat-pillars');
-  const beatProblem = document.getElementById('beat-problem');
-  const beatServices = document.getElementById('beat-services');
-  const beatHow = document.getElementById('beat-how');
-  const beatResults = document.getElementById('beat-results');
-  const beatCta = document.getElementById('beat-cta');
+// Cached DOM elements for scroll beats synchronizer to avoid repeated DOM queries every frame
+let cachedBeats = null;
+function getCachedBeats() {
+  if (!cachedBeats) {
+    cachedBeats = {
+      beatHero: document.getElementById('beat-hero'),
+      beatAbout: document.getElementById('beat-about'),
+      beatPillars: document.getElementById('beat-pillars'),
+      beatProblem: document.getElementById('beat-problem'),
+      beatServices: document.getElementById('beat-services'),
+      beatHow: document.getElementById('beat-how'),
+      beatResults: document.getElementById('beat-results'),
+      beatCta: document.getElementById('beat-cta'),
+      cardInf: document.getElementById('pillar-influence'),
+      cardCult: document.getElementById('pillar-culture'),
+      cardConn: document.getElementById('pillar-connection'),
+      rowCombined: document.getElementById('pillars-combined'),
+      p1: document.getElementById('problem-line-1'),
+      p2: document.getElementById('problem-line-2'),
+      p3: document.getElementById('problem-line-3'),
+      pSol: document.getElementById('problem-solution')
+    };
+  }
+  return cachedBeats;
+}
 
-  if (!beatHero) return; // Not on home page
+function syncScrollBeats(progress) {
+  const beats = getCachedBeats();
+  if (!beats.beatHero) return; // Not on home page
 
   // Helper to toggle active class
   const setBeatState = (el, isActive) => {
@@ -795,55 +862,41 @@ function syncScrollBeats(progress) {
   };
 
   // 1. HERO BEAT (0% - 12%)
-  setBeatState(beatHero, progress >= 0 && progress < 0.12);
+  setBeatState(beats.beatHero, progress >= 0 && progress < 0.12);
 
   // 2. ABOUT BEAT (12% - 24%)
-  setBeatState(beatAbout, progress >= 0.12 && progress < 0.24);
+  setBeatState(beats.beatAbout, progress >= 0.12 && progress < 0.24);
 
   // 3. BRAND PILLARS BEAT (24% - 50%)
   const inPillars = progress >= 0.24 && progress < 0.50;
-  setBeatState(beatPillars, inPillars);
-
-  const cardInf = document.getElementById('pillar-influence');
-  const cardCult = document.getElementById('pillar-culture');
-  const cardConn = document.getElementById('pillar-connection');
-  const rowCombined = document.getElementById('pillars-combined');
+  setBeatState(beats.beatPillars, inPillars);
 
   // Sub-timings across 24% - 50%:
-  // 0.240 - 0.300: "Influence" in #8B5CF6 (enters from depth, passes camera)
-  // 0.300 - 0.360: "Culture" in #D946EF (enters from depth, passes camera)
-  // 0.360 - 0.420: "Connection" in #F0ABFC (enters from depth, passes camera)
-  // 0.420 - 0.500: All three in one row joined by gradient lines with summary line
-  applyPillarDepthAnimation(cardInf, progress, 0.240, 0.300);
-  applyPillarDepthAnimation(cardCult, progress, 0.300, 0.360);
-  applyPillarDepthAnimation(cardConn, progress, 0.360, 0.420);
-  applyPillarsCombinedAnimation(rowCombined, progress, 0.420, 0.500);
+  applyPillarDepthAnimation(beats.cardInf, progress, 0.240, 0.300);
+  applyPillarDepthAnimation(beats.cardCult, progress, 0.300, 0.360);
+  applyPillarDepthAnimation(beats.cardConn, progress, 0.360, 0.420);
+  applyPillarsCombinedAnimation(beats.rowCombined, progress, 0.420, 0.500);
 
   // 4. THE PROBLEM BEAT (50% - 76%)
   const inProblem = progress >= 0.50 && progress < 0.76;
-  setBeatState(beatProblem, inProblem);
-
-  const p1 = document.getElementById('problem-line-1');
-  const p2 = document.getElementById('problem-line-2');
-  const p3 = document.getElementById('problem-line-3');
-  const pSol = document.getElementById('problem-solution');
+  setBeatState(beats.beatProblem, inProblem);
 
   if (inProblem) {
     // White lines appear one after another, followed by "Orbyx fixes that."
-    if (p1) p1.classList.toggle('visible', progress >= 0.515);
-    if (p2) p2.classList.toggle('visible', progress >= 0.565);
-    if (p3) p3.classList.toggle('visible', progress >= 0.615);
-    if (pSol) pSol.classList.toggle('visible', progress >= 0.670);
+    if (beats.p1) beats.p1.classList.toggle('visible', progress >= 0.515);
+    if (beats.p2) beats.p2.classList.toggle('visible', progress >= 0.565);
+    if (beats.p3) beats.p3.classList.toggle('visible', progress >= 0.615);
+    if (beats.pSol) beats.pSol.classList.toggle('visible', progress >= 0.670);
   } else {
-    if (p1) p1.classList.remove('visible');
-    if (p2) p2.classList.remove('visible');
-    if (p3) p3.classList.remove('visible');
-    if (pSol) pSol.classList.remove('visible');
+    if (beats.p1) beats.p1.classList.remove('visible');
+    if (beats.p2) beats.p2.classList.remove('visible');
+    if (beats.p3) beats.p3.classList.remove('visible');
+    if (beats.pSol) beats.pSol.classList.remove('visible');
   }
 
   // 5. OUR SERVICES BEAT (76% - 98%)
   const inServices = progress >= 0.76 && progress < 0.98;
-  setBeatState(beatServices, inServices);
+  setBeatState(beats.beatServices, inServices);
 
   // 98% - 100%: Sticky stage unpins naturally into Services Cards Stack directly below!
 }

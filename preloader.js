@@ -300,6 +300,12 @@
           preloaderEl.classList.add('fade-out');
         }
 
+        // Cancel starfield RAF immediately so GPU has 100% capacity for the hero entrance animations
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+
         triggerHeroEntrance();
         document.body.style.overflow = '';
 
@@ -307,12 +313,8 @@
           if (preloaderEl && preloaderEl.parentNode) {
             preloaderEl.parentNode.removeChild(preloaderEl);
           }
-          if (rafId) {
-            cancelAnimationFrame(rafId);
-            rafId = null;
-          }
           window.dispatchEvent(new CustomEvent('orbyx:preloader-complete'));
-        }, 450);
+        }, 400);
       }, 250);
     }, 120);
   }
@@ -341,6 +343,7 @@
     }
     document.body.style.overflow = '';
     triggerHeroEntrance();
+    window.dispatchEvent(new CustomEvent('orbyx:preloader-complete'));
 
     // If loaded with a hash (e.g. #faq), smoothly navigate to the target element
     if (window.location.hash) {
