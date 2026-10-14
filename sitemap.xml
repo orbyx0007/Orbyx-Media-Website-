@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://orbyxmedia.in/</loc>
-    <lastmod>2026-10-14</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.orbyxmedia.in/</loc>
+    <lastmod>2026-10-15</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://www.orbyxmedia.in/og-image.jpg</image:loc>
+      <image:title>Orbyx Media — Ads buy Attention, Culture earns it</image:title>
+      <image:caption>Orbyx Media Growth Marketing Partner Banner</image:caption>
+    </image:image>
   </url>
   <url>
-    <loc>https://orbyxmedia.in/creators.html</loc>
-    <lastmod>2026-10-14</lastmod>
+    <loc>https://www.orbyxmedia.in/creators</loc>
+    <lastmod>2026-10-15</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
