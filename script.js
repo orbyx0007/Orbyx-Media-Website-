@@ -1490,7 +1490,7 @@ function initFaqAccordion() {
   const faqList = document.getElementById('faq-list');
   if (!faqList) return;
 
-  // Initialize pre-opened items (e.g. item 1 matching the reference design)
+  // Initialize open items (if any are marked open)
   const initOpenItems = () => {
     faqList.querySelectorAll('.faq-item').forEach(item => {
       const trigger = item.querySelector('.faq-trigger');
