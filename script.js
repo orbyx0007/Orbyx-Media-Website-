@@ -35,7 +35,7 @@ const ORBYX_CONFIG = {
   SERVICES: [
     {
       title: "01 — Influencer Marketing",
-      image: "assets/Influencer Marketing.jpeg",
+      image: "assets/Influencer Marketing.webp",
       description: "Connecting your brand with creators whose audience, tone, and storytelling naturally align with your campaign goals. We turn creator partnerships into authentic community conversations rather than forced product endorsements.",
       bullets: [
         "Niche Audience Alignment",
@@ -47,7 +47,7 @@ const ORBYX_CONFIG = {
     },
     {
       title: "02 — Campaign Management",
-      image: "assets/Campaign Management.jpeg",
+      image: "assets/Campaign Management.webp",
       description: "End-to-end execution that takes your marketing initiatives from raw creative concepts to final performance delivery. We handle all logistics, timelines, and communications so your team can focus on core business operations.",
       bullets: [
         "Creative Briefing & Brand Safeguards",
@@ -59,7 +59,7 @@ const ORBYX_CONFIG = {
     },
     {
       title: "03 — Creator Outreach & Sourcing",
-      image: "assets/Creator Outreach & Sourcing.jpeg",
+      image: "assets/Creator Outreach & Sourcing.webp",
       description: "Data-driven discovery and direct communication with active creators who genuinely fit your brand identity. We vet real engagement, negotiate fair deliverables, and build high-affinity creator rosters that drive actual conversations.",
       bullets: [
         "Strategic Talent Discovery",
@@ -71,7 +71,7 @@ const ORBYX_CONFIG = {
     },
     {
       title: "04 — Social Media Management",
-      image: "assets/Social Media Management.jpg",
+      image: "assets/Social Media Management.webp",
       description: "Strategic positioning and content execution designed to keep your brand active, relatable, and culturally relevant. We turn your social channels into dynamic hubs that cultivate loyalty and spark continuous audience interaction.",
       bullets: [
         "Content Strategy & Calendar Planning",
@@ -83,7 +83,7 @@ const ORBYX_CONFIG = {
     },
     {
       title: "05 — Digital Marketing",
-      image: "assets/Digital Marketing.jpeg",
+      image: "assets/Digital Marketing.webp",
       description: "Paid campaigns engineered to turn attention into measurable action. We plan, launch, and optimize ads across platforms so every rupee works toward leads and sales.",
       bullets: [
         "Meta & Google Ad Campaigns",
@@ -136,7 +136,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Travel creator and visual storyteller documenting scenic journeys, cultural landmarks, and destination itineraries.",
       instagramUrl: "https://www.instagram.com/khushbu.shahhh?obrf=MTY0cmlvMHZ1Nndxeg==",
-      photo: "assets/khushbu.shahhh.jpeg"
+      photo: "assets/khushbu.shahhh.webp"
     },
     {
       id: 2,
@@ -150,7 +150,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Vlogging creator and visual storyteller capturing authentic everyday journeys, travel vlogs, and relatable lifestyle moments across Instagram and YouTube.",
       instagramUrl: "https://www.instagram.com/swekshamishra_/?utm_source=ig_web_button_share_sheet",
-      photo: "assets/swekshamishra_.jpeg"
+      photo: "assets/swekshamishra_.webp"
     },
     {
       id: 3,
@@ -164,7 +164,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Beauty and cosmetics creator sharing everyday glam, skincare regimens, and genuine makeup product transformations.",
       instagramUrl: "https://www.instagram.com/misty_girl_riya?rpxt=Ymg5MG9nc2oyMnkz",
-      photo: "assets/misty_girl_riya.jpeg"
+      photo: "assets/misty_girl_riya.webp"
     },
     {
       id: 4,
@@ -178,7 +178,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Wanderlust travel enthusiast capturing mountain getaways, boutique homestays, and immersive road trip adventures.",
       instagramUrl: "https://www.instagram.com/dreamingwithhimani?exln=MWNxb2I1N2dlNDl3dg==",
-      photo: "assets/dreamingwithhimani.jpeg"
+      photo: "assets/dreamingwithhimani.webp"
     },
     {
       id: 5,
@@ -192,7 +192,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "User-generated content specialist producing authentic, conversion-focused video assets and organic skincare reviews.",
       instagramUrl: "https://www.instagram.com/ugc_with_bhagya?rpxt=ZXI4NXA2emJveXl1",
-      photo: "assets/ugc_with_bhagya.jpeg"
+      photo: "assets/ugc_with_bhagya.webp"
     },
     {
       id: 6,
@@ -206,7 +206,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Fashion influencer crafting seasonal lookbooks, contemporary wardrobe styling, and street style aesthetics.",
       instagramUrl: "https://www.instagram.com/_.ankitabarman._?vrfl=MTZyb3BzM3hxenIzNQ==",
-      photo: "assets/_.ankitabarman._.jpeg"
+      photo: "assets/_.ankitabarman._.webp"
     },
     {
       id: 7,
@@ -220,7 +220,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Beauty creator showcasing radiant everyday skin routines, makeup tutorials, and clean beauty product curation.",
       instagramUrl: "https://www.instagram.com/akangshaaa.s?mdxt=aXpldmRzcnhrMDFl",
-      photo: "assets/akangshaaa.s.jpeg"
+      photo: "assets/akangshaaa.s.webp"
     },
     {
       id: 8,
@@ -234,7 +234,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Beauty and lifestyle creator sharing honest self-care rituals, fashion inspiration, and relatable daily lifestyle logs.",
       instagramUrl: "https://www.instagram.com/_sonam_paul_?rpxt=ajdjY2FqZ2J5cnB6",
-      photo: "assets/_sonam_paul_.jpeg"
+      photo: "assets/_sonam_paul_.webp"
     },
     {
       id: 9,
@@ -248,7 +248,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Beauty enthusiast sharing clean makeup inspiration, skincare remedies, and creative cosmetic styling.",
       instagramUrl: "https://www.instagram.com/nefes_ipekcii",
-      photo: "assets/nefes_ipekcii.jpeg"
+      photo: "assets/nefes_ipekcii.webp"
     },
     {
       id: 10,
@@ -262,7 +262,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "UGC content creator crafting viral, high-converting product videos and genuine unboxing experiences.",
       instagramUrl: "https://www.instagram.com/ugc.by.pari?vrfl=cHFybTlrbnhpcHhu",
-      photo: "assets/ugc.by.pari.jpeg"
+      photo: "assets/ugc.by.pari.webp"
     },
     {
       id: 11,
@@ -276,7 +276,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Lifestyle creator capturing authentic everyday moments, personal vlogs, and relatable student & creative life.",
       instagramUrl: "https://www.instagram.com/prachichhetry_?xtok=MXIzZ2hwZXZsMzd2",
-      photo: "assets/prachichhetry_.jpeg"
+      photo: "assets/prachichhetry_.webp"
     },
     {
       id: 12,
@@ -290,7 +290,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "Tech creator breaking down consumer gadgets, productivity tools, and modern software innovations.",
       instagramUrl: "https://www.instagram.com/iamabhinavpatil?obrf=MTEwbTJoZWN1cWk5",
-      photo: "assets/iamabhinavpatil.jpeg"
+      photo: "assets/iamabhinavpatil.webp"
     },
     {
       id: 13,
@@ -304,7 +304,7 @@ const ORBYX_CONFIG = {
       location: "India",
       bio: "UGC creator crafting high-converting, aesthetic brand content, product showcases, and creative visual storytelling.",
       instagramUrl: "https://www.instagram.com/thecontentgirly_?srtk=bGw5YWliNDVkaTQx",
-      photo: "assets/thecontentgirly_.jpeg"
+      photo: "assets/thecontentgirly_.webp"
     }
   ]
 };
