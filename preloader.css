@@ -1,0 +1,218 @@
+/* ============================================================================
+   ORBYX MEDIA - TUNNEL WARP PRELOADER STYLES
+   File: preloader.css
+   Color Palette:
+     - Background Deep: #0A0612
+     - Core Glow: #F0ABFC (light pink) & #D946EF (electric magenta)
+     - Accent Violet: #8B5CF6
+     - Counter Text: #C4B5FD
+     - Status Notice: #A78BFA
+     - Brand Heading Font: Outfit / Space Grotesk / system-ui
+   ============================================================================ */
+
+/* 1. FULLSCREEN OVERLAY CONTAINER */
+.warp-preloader {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #0A0612;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: all;
+  opacity: 1;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+.warp-preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* 2. BACKGROUND WARP CANVAS */
+.warp-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+/* 3. RADIAL FLASH OVERLAY FOR WARP JUMP EXIT (300ms) */
+.warp-flash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: radial-gradient(circle at center, #FFFFFF 0%, #F0ABFC 35%, #8B5CF6 70%, transparent 100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  mix-blend-mode: screen;
+}
+
+.warp-flash-overlay.active {
+  opacity: 0.95;
+}
+
+/* 4. CENTER UI OVERLAY */
+.warp-center-ui {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  user-select: none;
+  pointer-events: none;
+  gap: 1.25rem;
+  max-width: 90vw;
+}
+
+/* Logo: "ORBYX." (white, 28px, bold) */
+.warp-logo {
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #FFFFFF;
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(217, 70, 239, 0.45);
+}
+
+.warp-logo-dot {
+  color: #D946EF;
+}
+
+/* Center Glowing Dot: #F0ABFC with #D946EF glow */
+.warp-core-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #F0ABFC;
+  box-shadow: 0 0 16px 4px #D946EF, 0 0 32px 8px rgba(139, 92, 246, 0.5);
+  animation: warpCorePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes warpCorePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 14px 4px #D946EF, 0 0 28px 6px rgba(139, 92, 246, 0.45);
+  }
+  50% {
+    transform: scale(1.35);
+    box-shadow: 0 0 22px 6px #F0ABFC, 0 0 38px 10px rgba(217, 70, 239, 0.7);
+  }
+}
+
+/* Progress Section */
+.warp-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* Percentage Counter: 18px, #C4B5FD, Tabular Numbers */
+.warp-counter {
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #C4B5FD;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+/* Thin Progress Line: 2px, Gradient #8B5CF6 to #D946EF */
+.warp-bar-track {
+  width: 140px;
+  height: 2px;
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.warp-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #8B5CF6 0%, #D946EF 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 10px #D946EF;
+  transition: width 0.12s ease-out;
+}
+
+/* Status message (shown after 8 seconds of slow loading) */
+.warp-status {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #A78BFA;
+  letter-spacing: 0.02em;
+  min-height: 16px;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.warp-status.visible {
+  opacity: 1;
+}
+
+/* 5. HERO ENTRANCE ANIMATION (Triggered on Preloader Exit) */
+.hero-entering .hero-headline {
+  animation: heroFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hero-entering .hero-subline {
+  animation: heroFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards;
+}
+
+.hero-entering .hero-cta-group {
+  animation: heroFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.22s forwards;
+}
+
+.hero-entering .hero-scroll-hint {
+  animation: heroFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.32s forwards;
+}
+
+@keyframes heroFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 6. REDUCED MOTION SUPPORT */
+@media (prefers-reduced-motion: reduce) {
+  .warp-canvas {
+    display: none !important;
+  }
+  .warp-core-dot {
+    animation: none !important;
+  }
+  .warp-flash-overlay {
+    display: none !important;
+  }
+  .warp-preloader {
+    transition: opacity 0.25s ease !important;
+  }
+  .hero-entering .hero-headline,
+  .hero-entering .hero-subline,
+  .hero-entering .hero-cta-group,
+  .hero-entering .hero-scroll-hint {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
