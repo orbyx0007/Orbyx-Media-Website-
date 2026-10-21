@@ -1621,21 +1621,6 @@ function initForms() {
     btnBrand.addEventListener('click', () => switchMobileForm('brand'));
   }
 
-  // Budget custom amount handler
-  const budgetSelect = document.getElementById('b-budget');
-  const budgetCustomWrap = document.getElementById('b-budget-custom-wrap');
-  const budgetCustomInput = document.getElementById('b-budget-custom');
-
-  if (budgetSelect && budgetCustomWrap) {
-    budgetSelect.addEventListener('change', () => {
-      if (budgetSelect.value === 'custom') {
-        budgetCustomWrap.style.display = 'block';
-        budgetCustomInput?.focus();
-      } else {
-        budgetCustomWrap.style.display = 'none';
-      }
-    });
-  }
 
   // Connect any form element to its API endpoint via FormData & fetch
   function setupFormConnection(formId, endpointKey, feedbackId) {
