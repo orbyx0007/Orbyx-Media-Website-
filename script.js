@@ -70,19 +70,7 @@ const ORBYX_CONFIG = {
       ]
     },
     {
-      title: "04 — Social Media Management",
-      image: "assets/Social Media Management.webp",
-      description: "Strategic positioning and content execution designed to keep your brand active, relatable, and culturally relevant. We turn your social channels into dynamic hubs that cultivate loyalty and spark continuous audience interaction.",
-      bullets: [
-        "Content Strategy & Calendar Planning",
-        "Situational & Trend-Responsive Posting",
-        "Active Community & DM Engagement",
-        "Platform-Native Asset Production",
-        "Cross-Platform Narrative Alignment"
-      ]
-    },
-    {
-      title: "05 — Digital Marketing",
+      title: "04 — Digital Marketing",
       image: "assets/Digital Marketing.webp",
       description: "Paid campaigns engineered to turn attention into measurable action. We plan, launch, and optimize ads across platforms so every rupee works toward leads and sales.",
       bullets: [
