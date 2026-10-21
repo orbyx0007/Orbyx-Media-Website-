@@ -905,6 +905,17 @@ h1, h2, h3, h4, h5, h6 {
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
 }
 
+@media (max-width: 768px) {
+  .pillars-combined-row,
+  #pillars-combined,
+  .pillars-flow-combined {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
 /* Beat 4: THE PROBLEM (35-45%) */
 .scroll-beat.beat-problem {
   position: absolute;

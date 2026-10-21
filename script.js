@@ -778,6 +778,14 @@ function applyPillarDepthAnimation(card, progress, start, end) {
 // Helper: Animate all three pillars united in one row
 function applyPillarsCombinedAnimation(rowCombined, progress, start, end) {
   if (!rowCombined) return;
+  if (window.innerWidth <= 768) {
+    rowCombined.style.display = 'none';
+    rowCombined.style.opacity = '0';
+    rowCombined.style.visibility = 'hidden';
+    rowCombined.style.pointerEvents = 'none';
+    rowCombined.classList.remove('active');
+    return;
+  }
 
   if (progress >= start && progress < end) {
     const t = (progress - start) / (end - start);
@@ -796,6 +804,7 @@ function applyPillarsCombinedAnimation(rowCombined, progress, start, end) {
       scale = 1.0 + 0.05 * q;
     }
 
+    rowCombined.style.display = '';
     rowCombined.style.opacity = opacity.toFixed(3);
     rowCombined.style.transform = `translate(-50%, -50%) translateY(${translateY.toFixed(1)}px) scale(${scale.toFixed(3)})`;
     rowCombined.style.visibility = opacity > 0.01 ? 'visible' : 'hidden';
@@ -859,11 +868,26 @@ function syncScrollBeats(progress) {
   const inPillars = progress >= 0.24 && progress < 0.50;
   setBeatState(beats.beatPillars, inPillars);
 
-  // Sub-timings across 24% - 50%:
-  applyPillarDepthAnimation(beats.cardInf, progress, 0.240, 0.300);
-  applyPillarDepthAnimation(beats.cardCult, progress, 0.300, 0.360);
-  applyPillarDepthAnimation(beats.cardConn, progress, 0.360, 0.420);
-  applyPillarsCombinedAnimation(beats.rowCombined, progress, 0.420, 0.500);
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    // Distribute the 3 pillars evenly on mobile without the combined summary row
+    applyPillarDepthAnimation(beats.cardInf, progress, 0.240, 0.326);
+    applyPillarDepthAnimation(beats.cardCult, progress, 0.326, 0.413);
+    applyPillarDepthAnimation(beats.cardConn, progress, 0.413, 0.500);
+    if (beats.rowCombined) {
+      beats.rowCombined.style.display = 'none';
+      beats.rowCombined.style.opacity = '0';
+      beats.rowCombined.style.visibility = 'hidden';
+      beats.rowCombined.style.pointerEvents = 'none';
+      beats.rowCombined.classList.remove('active');
+    }
+  } else {
+    // Desktop: 3 individual pillars followed by combined summary row
+    applyPillarDepthAnimation(beats.cardInf, progress, 0.240, 0.300);
+    applyPillarDepthAnimation(beats.cardCult, progress, 0.300, 0.360);
+    applyPillarDepthAnimation(beats.cardConn, progress, 0.360, 0.420);
+    applyPillarsCombinedAnimation(beats.rowCombined, progress, 0.420, 0.500);
+  }
 
   // 4. THE PROBLEM BEAT (50% - 76%)
   const inProblem = progress >= 0.50 && progress < 0.76;
